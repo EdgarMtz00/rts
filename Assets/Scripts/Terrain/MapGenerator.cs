@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Threading;
 using UnityEngine;
 
 namespace Terrain
@@ -11,16 +13,20 @@ namespace Terrain
         public Color color;
     }
 
+    public struct MapData
+    {
+        public readonly float[,] heightMap;
+        public readonly Color[] colorMap;
+
+        public MapData(float[,] heightMap, Color[] colorMap)
+        {
+            this.heightMap = heightMap;
+            this.colorMap = colorMap;
+        }
+    }
+
     public class MapGenerator : MonoBehaviour
     {
-        public enum DrawMode
-        {
-            NoiseMap,
-            ColorMap,
-            Mesh
-        }
-
-        [SerializeField] private int chunkSize = 241;
         [SerializeField] private float noiseScale;
         [SerializeField] private int octaves;
         [Range(0, 1)] [SerializeField] private float persistance;
@@ -29,54 +35,111 @@ namespace Terrain
         [SerializeField] private Vector2 offset;
         [SerializeField] private float heightMultiplier;
         [SerializeField] private AnimationCurve meshHeightCurve;
+        private Queue<MapThreadInfo<MapData>> _mapDataThreadQueue = new();
+        private Queue<MapThreadInfo<MeshData>> _meshDataThreadQueue = new();
 
+        public const int ChunkSize = 241;
         public bool autoUpdate;
         public TerrainType[] regions;
-        public DrawMode drawMode;
-        [Range(0, 6)]
-        public int levelOfDetail;
+        [Range(0, 6)] public int levelOfDetail;
 
-        public void GenerateMap()
+        public MapData GenerateMapData()
         {
-            float[,] noiseMap = Noise.GenerateNoiseMap(chunkSize, chunkSize, noiseScale, octaves, persistance,
+            float[,] noiseMap = Noise.GenerateNoiseMap(ChunkSize, ChunkSize, noiseScale, octaves, persistance,
                 lacunarity, seed, offset);
 
-            Color[] colorMap = new Color[chunkSize * chunkSize];
-            for (int y = 0; y < chunkSize; y++)
+            Color[] colorMap = new Color[ChunkSize * ChunkSize];
+            for (int y = 0; y < ChunkSize; y++)
             {
-                for (int x = 0; x < chunkSize; x++)
+                for (int x = 0; x < ChunkSize; x++)
                 {
                     float currentHeight = noiseMap[x, y];
                     for (int i = 0; i < regions.Length; i++)
                     {
                         if (currentHeight <= regions[i].height)
                         {
-                            colorMap[y * chunkSize + x] = regions[i].color;
+                            colorMap[y * ChunkSize + x] = regions[i].color;
                             break;
                         }
                     }
                 }
             }
 
+            return new MapData(noiseMap, colorMap);
+        }
+
+        public void DrawMap()
+        {
+            MapData mapData = GenerateMapData();
             MapDisplay display = FindObjectOfType<MapDisplay>();
-            if (drawMode == DrawMode.NoiseMap)
+            display.DrawMesh(
+                MeshGenerator.GenerateTerrainMesh(mapData.heightMap, heightMultiplier, meshHeightCurve, levelOfDetail),
+                TextureGenerator.TextureFromColorMap(mapData.colorMap, ChunkSize, ChunkSize));
+        }
+
+        public void RequestMapData(Action<MapData> callback)
+        {
+            void ThreadStart()
             {
-                display.DrawMapTexture(TextureGenerator.TextureFromHeighMap(noiseMap));
+                MapDataThread(callback);
             }
-            else if (drawMode == DrawMode.ColorMap)
+
+            new Thread((ThreadStart) ThreadStart).Start();
+        }
+
+        private void MapDataThread(Action<MapData> callback)
+        {
+            MapData mapData = GenerateMapData();
+            lock (_mapDataThreadQueue)
             {
-                display.DrawMapTexture(TextureGenerator.TextureFromColorMap(colorMap, chunkSize, chunkSize));
+                _mapDataThreadQueue.Enqueue(new MapThreadInfo<MapData>(callback, mapData));
             }
-            else if (drawMode == DrawMode.Mesh)
+        }
+
+        public void RequestMeshData(MapData mapData, Action<MeshData> callback)
+        {
+            void ThreadStart()
             {
-                display.DrawMesh(MeshGenerator.GenerateTerrainMesh(noiseMap, heightMultiplier, meshHeightCurve, levelOfDetail),
-                    TextureGenerator.TextureFromColorMap(colorMap, chunkSize, chunkSize));
+                MeshDataThread(mapData, callback);   
+            }
+            
+            new Thread(ThreadStart).Start();
+        }
+
+        private void MeshDataThread(MapData mapData, Action<MeshData> callback)
+        {
+            MeshData meshData =
+                MeshGenerator.GenerateTerrainMesh(mapData.heightMap, heightMultiplier, meshHeightCurve, levelOfDetail);
+            lock (_meshDataThreadQueue)
+            {
+                _meshDataThreadQueue.Enqueue(new MapThreadInfo<MeshData>(callback, meshData));
+            }
+        }
+
+        private void Update()
+        {
+            if (_mapDataThreadQueue.Count > 0)
+            {
+                for (int i = 0; i < _mapDataThreadQueue.Count; i++)
+                {
+                    MapThreadInfo<MapData> threadInfo = _mapDataThreadQueue.Dequeue();
+                    threadInfo.callback(threadInfo.parameter);
+                }
+            }
+
+            if (_meshDataThreadQueue.Count > 0) 
+            {
+                for (int i = 0; i < _meshDataThreadQueue.Count; i++)
+                {
+                    MapThreadInfo<MeshData> threadInfo = _meshDataThreadQueue.Dequeue();
+                    threadInfo.callback(threadInfo.parameter);
+                }
             }
         }
 
         private void Start()
         {
-            GenerateMap();
+            DrawMap();
         }
 
         private void OnValidate()
@@ -89,6 +152,18 @@ namespace Terrain
             if (lacunarity < 1)
             {
                 lacunarity = 1;
+            }
+        }
+
+        struct MapThreadInfo<T>
+        {
+            public readonly Action<T> callback;
+            public readonly T parameter;
+
+            public MapThreadInfo(Action<T> callback, T parameter)
+            {
+                this.callback = callback;
+                this.parameter = parameter;
             }
         }
     }

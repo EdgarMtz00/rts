@@ -15,13 +15,13 @@ namespace Editor
             {
                 if (mapGenerator.autoUpdate)
                 {
-                    mapGenerator.GenerateMap();
+                    mapGenerator.DrawMap();
                 }
             }
 
             if (GUILayout.Button("Generate"))
             {
-                mapGenerator.GenerateMap();
+                mapGenerator.DrawMap();
             }
         }
     }
