@@ -9,7 +9,7 @@ namespace Terrain
         public static MeshData GenerateTerrainMesh(float[,] heightMap, float heightMultiplier,
             AnimationCurve heightCurve, int levelOfDetail)
         {
-            AnimationCurve _heightCurve = new AnimationCurve(heightCurve.keys);
+            AnimationCurve curve = new AnimationCurve(heightCurve.keys);
             
             int width = heightMap.GetLength(0);
             int height = heightMap.GetLength(1);
@@ -27,7 +27,7 @@ namespace Terrain
                 for (int x = 0; x < width; x+= simplificationIncrement)
                 {
                     meshData.vertices[vertexIndex] = new Vector3(topLeftX + x,
-                        _heightCurve.Evaluate(heightMap[x, y]) * heightMap[x, y] * heightMultiplier, topLeftZ - y);
+                        curve.Evaluate(heightMap[x, y]) * heightMap[x, y] * heightMultiplier, topLeftZ - y);
                     meshData.uvs[vertexIndex] = new Vector2(x / (float) width, y / (float) height);
 
                     if (x < width - 1 && y < height - 1)

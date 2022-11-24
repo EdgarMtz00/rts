@@ -43,10 +43,10 @@ namespace Terrain
         public TerrainType[] regions;
         [Range(0, 6)] public int levelOfDetail;
 
-        public MapData GenerateMapData()
+        public MapData GenerateMapData(Vector2 center)
         {
             float[,] noiseMap = Noise.GenerateNoiseMap(ChunkSize, ChunkSize, noiseScale, octaves, persistance,
-                lacunarity, seed, offset);
+                lacunarity, seed, center + offset);
 
             Color[] colorMap = new Color[ChunkSize * ChunkSize];
             for (int y = 0; y < ChunkSize; y++)
@@ -56,9 +56,12 @@ namespace Terrain
                     float currentHeight = noiseMap[x, y];
                     for (int i = 0; i < regions.Length; i++)
                     {
-                        if (currentHeight <= regions[i].height)
+                        if (currentHeight >= regions[i].height)
                         {
                             colorMap[y * ChunkSize + x] = regions[i].color;
+                        }
+                        else
+                        {
                             break;
                         }
                     }
@@ -70,46 +73,46 @@ namespace Terrain
 
         public void DrawMap()
         {
-            MapData mapData = GenerateMapData();
+            MapData mapData = GenerateMapData(Vector2.zero);
             MapDisplay display = FindObjectOfType<MapDisplay>();
             display.DrawMesh(
                 MeshGenerator.GenerateTerrainMesh(mapData.heightMap, heightMultiplier, meshHeightCurve, levelOfDetail),
                 TextureGenerator.TextureFromColorMap(mapData.colorMap, ChunkSize, ChunkSize));
         }
 
-        public void RequestMapData(Action<MapData> callback)
+        public void RequestMapData(Vector2 center, Action<MapData> callback)
         {
             void ThreadStart()
             {
-                MapDataThread(callback);
+                MapDataThread(center, callback);
             }
 
-            new Thread((ThreadStart) ThreadStart).Start();
+            new Thread(ThreadStart).Start();
         }
 
-        private void MapDataThread(Action<MapData> callback)
+        private void MapDataThread(Vector2 center, Action<MapData> callback)
         {
-            MapData mapData = GenerateMapData();
+            MapData mapData = GenerateMapData(center);
             lock (_mapDataThreadQueue)
             {
                 _mapDataThreadQueue.Enqueue(new MapThreadInfo<MapData>(callback, mapData));
             }
         }
 
-        public void RequestMeshData(MapData mapData, Action<MeshData> callback)
+        public void RequestMeshData(MapData mapData, int lod, Action<MeshData> callback)
         {
             void ThreadStart()
             {
-                MeshDataThread(mapData, callback);   
+                MeshDataThread(mapData, lod, callback);   
             }
             
             new Thread(ThreadStart).Start();
         }
 
-        private void MeshDataThread(MapData mapData, Action<MeshData> callback)
+        private void MeshDataThread(MapData mapData, int lod, Action<MeshData> callback)
         {
             MeshData meshData =
-                MeshGenerator.GenerateTerrainMesh(mapData.heightMap, heightMultiplier, meshHeightCurve, levelOfDetail);
+                MeshGenerator.GenerateTerrainMesh(mapData.heightMap, heightMultiplier, meshHeightCurve, lod);
             lock (_meshDataThreadQueue)
             {
                 _meshDataThreadQueue.Enqueue(new MapThreadInfo<MeshData>(callback, meshData));
@@ -135,11 +138,6 @@ namespace Terrain
                     threadInfo.callback(threadInfo.parameter);
                 }
             }
-        }
-
-        private void Start()
-        {
-            DrawMap();
         }
 
         private void OnValidate()
