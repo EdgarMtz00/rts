@@ -38,14 +38,14 @@ namespace Terrain
         private Queue<MapThreadInfo<MapData>> _mapDataThreadQueue = new();
         private Queue<MapThreadInfo<MeshData>> _meshDataThreadQueue = new();
 
-        public const int ChunkSize = 241;
+        public const int ChunkSize = 239;
         public bool autoUpdate;
         public TerrainType[] regions;
         [Range(0, 6)] public int levelOfDetail;
 
         public MapData GenerateMapData(Vector2 center)
         {
-            float[,] noiseMap = Noise.GenerateNoiseMap(ChunkSize, ChunkSize, noiseScale, octaves, persistance,
+            float[,] noiseMap = Noise.GenerateNoiseMap(ChunkSize + 2, ChunkSize + 2, noiseScale, octaves, persistance,
                 lacunarity, seed, center + offset);
 
             Color[] colorMap = new Color[ChunkSize * ChunkSize];

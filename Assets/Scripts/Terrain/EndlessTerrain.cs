@@ -92,8 +92,10 @@ namespace Terrain
 
             private MeshRenderer _meshRenderer;
             private MeshFilter _meshFilter;
+            private MeshCollider _meshCollider;
             private readonly LODInfo[] _detailLevels;
             private LODMesh[] _lodMeshes;
+            private LODMesh _collisionLODMesh;
             
             public TerrainChunk(Vector2 coord, int size, LODInfo[] detailLevels, Transform parent, Material material)
             {
@@ -105,6 +107,7 @@ namespace Terrain
                 _meshObject = new GameObject("Terrain Chunk");
                 _meshRenderer = _meshObject.AddComponent<MeshRenderer>();
                 _meshFilter = _meshObject.AddComponent<MeshFilter>();
+                _meshCollider = _meshObject.AddComponent<MeshCollider>();
                 _meshRenderer.material = material;
                 _meshObject.transform.position = positionV3 * Scale;
                 _meshObject.transform.parent = parent;
@@ -116,6 +119,10 @@ namespace Terrain
                 for (int i = 0; i < detailLevels.Length; i++)
                 {
                     _lodMeshes[i] = new LODMesh(detailLevels[i].lod, UpdateChunk);
+                    if (detailLevels[i].useForCollider)
+                    {
+                        _collisionLODMesh = _lodMeshes[i];
+                    }
                 }
 
                 _mapGenerator.RequestMapData(position, OnMapDataReceived);
@@ -156,7 +163,18 @@ namespace Terrain
                                 lodMesh.RequestMesh(_mapData);
                             }
                         }
-                        
+
+                        if (lodIndex == 0)
+                        {
+                            if (_collisionLODMesh.HasMesh)
+                            {
+                                _meshCollider.sharedMesh = _collisionLODMesh.Mesh;
+                            } 
+                            else if (!_collisionLODMesh.HasRequestedMesh)
+                            {
+                                _collisionLODMesh.RequestMesh(_mapData);
+                            }
+                        }
                         _visibleTerrainChunks.Add(this);
                     }
 
@@ -221,6 +239,7 @@ namespace Terrain
         {
             public int lod;
             public float visibleDistanceThreshold;
+            public bool useForCollider;
         }
     }
 }
