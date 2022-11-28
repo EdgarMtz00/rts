@@ -37,5 +37,10 @@ namespace Controls
             }
             _selectedObjects.Clear();
         }
+        
+        public Dictionary<int, GameObject> GetSelectedObjects()
+        {
+            return _selectedObjects;
+        }
     }
 }

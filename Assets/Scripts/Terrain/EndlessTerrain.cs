@@ -81,7 +81,7 @@ namespace Terrain
             }
         }
 
-        public class TerrainChunk
+        class TerrainChunk
         {
             private readonly GameObject _meshObject;
             private Bounds _bounds;
@@ -111,7 +111,9 @@ namespace Terrain
                 _meshRenderer.material = material;
                 _meshObject.transform.position = positionV3 * Scale;
                 _meshObject.transform.parent = parent;
-                _meshObject.transform.localScale = Vector3.one * Scale; 
+                _meshObject.transform.localScale = Vector3.one * Scale;
+                _meshObject.layer = 3;
+                _meshObject.tag = "Ground";
 
                 SetVisible(true);
 
