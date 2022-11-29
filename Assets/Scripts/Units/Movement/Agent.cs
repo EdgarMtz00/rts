@@ -6,13 +6,17 @@ namespace Units.Movement
     {
         public float maxSpeed = 3.0f;
         public float maxAcceleration = 0.5f;
+        public float range = 10.0f;
         public float speedLimit;
+        public float fireRate = 0.5f;
 
         public float orientation;
         public float rotation;
         public Vector3 velocity;
         protected Steering Steering;
-    
+        public GameObject missile;
+        public float nextAttack;
+
         void Start()
         {
             velocity = Vector3.zero;

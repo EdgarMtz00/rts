@@ -7,7 +7,7 @@ namespace Units.Movement.Behaviours
         protected override Steering GetSteering()
         {
             Steering steer = new Steering();
-            steer.LinearVelocity = target - transform.position;
+            steer.LinearVelocity = targetPosition - transform.position;
             steer.LinearVelocity.Normalize();
             steer.LinearVelocity *= Agent.maxAcceleration;
             return steer;
@@ -15,9 +15,8 @@ namespace Units.Movement.Behaviours
 
         public override void Update()
         {
-            if (Vector3.Distance(transform.position, target) < 0.5f)
+            if (Vector3.Distance(transform.position, targetPosition) < 0.5f)
             {
-                print("Reached target");
                 Agent.velocity = Vector3.zero;
                 Destroy(this);
             }
@@ -25,10 +24,13 @@ namespace Units.Movement.Behaviours
             base.Update();
         }
         
-        public void SetTarget(Vector3 target)
+        public void SetTargetPosition(Vector3 position)
         {
-            Agent.velocity = Vector3.zero;
-            this.target = target;
+            if (Agent != null)
+            {
+                Agent.velocity = Vector3.zero;
+            }
+            this.targetPosition = position;
         }
     }
 }

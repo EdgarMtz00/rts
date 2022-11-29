@@ -1,5 +1,6 @@
 using Units.Movement;
 using Units.Movement.Behaviours;
+using Unity.VisualScripting;
 using UnityEngine;
 
 namespace Controls
@@ -108,21 +109,39 @@ namespace Controls
                 _ray = Camera.main!.ScreenPointToRay(Input.mousePosition);
                 if (Physics.Raycast(_ray, out _hitData, 50000.0f, LayerMask))
                 {
+                    bool shouldAttack = !_hitData.transform.GameObject().CompareTag("Ground");
                     foreach (var agent in _selectedDictionary.GetSelectedObjects().Values)
                     {
                         if (agent.GetComponent<Agent>() != null)
                         {
-                            if (agent.GetComponent<Seek>() == null)
+                            if (shouldAttack)
                             {
-                                agent.AddComponent<Seek>().target = _hitData.point;
+                                Destroy(agent.GetComponent<Seek>());
+                                if (agent.GetComponent<Attack>() == null)
+                                {
+                                    agent.AddComponent<Attack>().SetTarget(_hitData.transform.gameObject);
+                                }
+                                else
+                                {
+                                    agent.GetComponent<Attack>().SetTarget(_hitData.transform.gameObject);
+                                }
                             }
                             else
                             {
-                                agent.GetComponent<Seek>().SetTarget(_hitData.point);
+                                Destroy(agent.GetComponent<Attack>());
+                                if (agent.GetComponent<Seek>() == null)
+                                {
+                                    agent.AddComponent<Seek>().SetTargetPosition(_hitData.point);
+                                }
+                                else
+                                {
+                                    agent.GetComponent<Seek>().SetTargetPosition(_hitData.point);
+                                }
                             }
                         }
                     }
                 }
+                
             }
         }
         

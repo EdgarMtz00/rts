@@ -8,7 +8,8 @@ public class AgentBehaviour : MonoBehaviour
 {
     public float weight = 1.0f;
 
-    public Vector3 target;
+    public Vector3 targetPosition;
+    public GameObject target;
     protected Agent Agent;
 
     public virtual void Start()
