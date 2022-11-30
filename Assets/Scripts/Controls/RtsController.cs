@@ -17,13 +17,14 @@ namespace Controls
         private Vector3 _selectStart;
         
         [SerializeField] private GameObject platform;
+        [SerializeField] private GameObject unit;
         private float buildingTimeout = 0.0f;
         
         private bool _isBuilding;
 
         private static readonly int[] Triangles = { 0, 1, 2, 2, 1, 3, 4, 6, 0, 0, 6, 2, 6, 7, 2, 2, 7, 3, 7, 5, 3, 3, 5, 1, 5, 0, 1, 1, 4, 0, 4, 5, 6, 6, 5, 7 };
         private static readonly int SelectableLayer = 3;
-        private static readonly int LayerMask = (1 << SelectableLayer);
+        private static readonly int SelectableLayerMask = (1 << SelectableLayer);
         void Start()
         {
             _selectedDictionary = GetComponent<SelectedDictionary>();
@@ -58,7 +59,7 @@ namespace Controls
                     {
                         _isBuilding = false;
                         _ray = Camera.main!.ScreenPointToRay(Input.mousePosition);
-                        if (Physics.Raycast(_ray, out _hitData, 50000.0f, LayerMask))
+                        if (Physics.Raycast(_ray, out _hitData, 50000.0f, SelectableLayerMask))
                         {
                             Instantiate(platform, _hitData.point, Quaternion.identity);
                         }
@@ -72,8 +73,13 @@ namespace Controls
                 {
                     _ray = Camera.main!.ScreenPointToRay(Input.mousePosition);
                     // If we hit a selectable object
-                    if (Physics.Raycast(_ray, out _hitData, 50000.0f, LayerMask))
+                    if (Physics.Raycast(_ray, out _hitData, 50000.0f, SelectableLayerMask))
                     {
+                        if (_hitData.transform.CompareTag("Building"))
+                        {
+                            _menuManager.UnitMenu(unit, _hitData.transform.position);
+                        }
+                        
                         // Add it to the selected dictionary if pressing shift, otherwise clear the dictionary and add it
                         if (Input.GetKey(KeyCode.LeftShift))
                         {
@@ -109,7 +115,7 @@ namespace Controls
                     {
                         Ray ray = mainCamera!.ScreenPointToRay(corner);
 
-                        if (Physics.Raycast(ray, out _hitData, 50000.0f, LayerMask))
+                        if (Physics.Raycast(ray, out _hitData, 50000.0f, SelectableLayerMask))
                         {
                             bottom[i] = new Vector3(_hitData.point.x, _hitData.point.y, _hitData.point.z);
                             top[i] = ray.origin - _hitData.point;
@@ -140,7 +146,7 @@ namespace Controls
             if (Input.GetMouseButton(1))
             {
                 _ray = Camera.main!.ScreenPointToRay(Input.mousePosition);
-                if (Physics.Raycast(_ray, out _hitData, 50000.0f, LayerMask))
+                if (Physics.Raycast(_ray, out _hitData, 50000.0f, SelectableLayerMask))
                 {
                     // If we hit somenthing else than the ground, make the units attack it
                     bool shouldAttack = !_hitData.transform.GameObject().CompareTag("Ground");
@@ -151,26 +157,26 @@ namespace Controls
                         {
                             if (shouldAttack)
                             {
-                                Destroy(agent.GetComponent<Seek>());
-                                if (agent.GetComponent<Attack>() == null)
+                                Destroy(agent.GetComponent<SeekBehaviour>());
+                                if (agent.GetComponent<AttackBehaviour>() == null)
                                 {
-                                    agent.AddComponent<Attack>().SetTarget(_hitData.transform.gameObject);
+                                    agent.AddComponent<AttackBehaviour>().SetTarget(_hitData.transform.gameObject);
                                 }
                                 else
                                 {
-                                    agent.GetComponent<Attack>().SetTarget(_hitData.transform.gameObject);
+                                    agent.GetComponent<AttackBehaviour>().SetTarget(_hitData.transform.gameObject);
                                 }
                             }
                             else
                             {
-                                Destroy(agent.GetComponent<Attack>());
-                                if (agent.GetComponent<Seek>() == null)
+                                Destroy(agent.GetComponent<AttackBehaviour>());
+                                if (agent.GetComponent<SeekBehaviour>() == null)
                                 {
-                                    agent.AddComponent<Seek>().SetTargetPosition(_hitData.point);
+                                    agent.AddComponent<SeekBehaviour>().SetTargetPosition(_hitData.point);
                                 }
                                 else
                                 {
-                                    agent.GetComponent<Seek>().SetTargetPosition(_hitData.point);
+                                    agent.GetComponent<SeekBehaviour>().SetTargetPosition(_hitData.point);
                                 }
                             }
                         }
@@ -188,7 +194,7 @@ namespace Controls
             
             if (Input.GetKey(KeyCode.Escape))
             {
-                _menuManager.CloseMenu();
+                _menuManager.CloseBuildMenu();
                 _isBuilding = false;
                 _selectedDictionary.DeselectAll();
             }
