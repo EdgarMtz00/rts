@@ -1,3 +1,4 @@
+using Menus;
 using Units.Movement;
 using Units.Movement.Behaviours;
 using Unity.VisualScripting;
@@ -11,8 +12,14 @@ namespace Controls
         private RaycastHit _hitData;
 
         private SelectedDictionary _selectedDictionary;
+        private MenuManager _menuManager;
         private bool _dragSelect;
         private Vector3 _selectStart;
+        
+        [SerializeField] private GameObject platform;
+        private float buildingTimeout = 0.0f;
+        
+        private bool _isBuilding;
 
         private static readonly int[] Triangles = { 0, 1, 2, 2, 1, 3, 4, 6, 0, 0, 6, 2, 6, 7, 2, 2, 7, 3, 7, 5, 3, 3, 5, 1, 5, 0, 1, 1, 4, 0, 4, 5, 6, 6, 5, 7 };
         private static readonly int SelectableLayer = 3;
@@ -20,17 +27,20 @@ namespace Controls
         void Start()
         {
             _selectedDictionary = GetComponent<SelectedDictionary>();
+            _menuManager = GetComponent<MenuManager>();
             _dragSelect = false;
         }
     
         // Update is called once per frame
         void Update()
         {
+            // Start Drag Select
             if (Input.GetMouseButtonDown(0))
             {
                 _selectStart = Input.mousePosition;
             }
 
+            // Determine if we are dragging
             if (Input.GetMouseButton(0))
             {
                 if ((_selectStart - Input.mousePosition).magnitude > 40)
@@ -39,13 +49,32 @@ namespace Controls
                 }
             }
 
+            // End Drag Select
             if (Input.GetMouseButtonUp(0))
             {
+                if (_isBuilding)
+                {
+                    if (buildingTimeout < Time.time)
+                    {
+                        _isBuilding = false;
+                        _ray = Camera.main!.ScreenPointToRay(Input.mousePosition);
+                        if (Physics.Raycast(_ray, out _hitData, 50000.0f, LayerMask))
+                        {
+                            Instantiate(platform, _hitData.point, Quaternion.identity);
+                        }
+                    }
+
+                    return;
+                }
+                
+                // If we are not dragging, select a single point
                 if (_dragSelect == false)
                 {
-                    _ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+                    _ray = Camera.main!.ScreenPointToRay(Input.mousePosition);
+                    // If we hit a selectable object
                     if (Physics.Raycast(_ray, out _hitData, 50000.0f, LayerMask))
                     {
+                        // Add it to the selected dictionary if pressing shift, otherwise clear the dictionary and add it
                         if (Input.GetKey(KeyCode.LeftShift))
                         {
                             _selectedDictionary.AddSelected(_hitData.transform.gameObject);
@@ -58,6 +87,7 @@ namespace Controls
                     }
                     else
                     {
+                        // If we didn't hit a selectable object and we are not pressing shift, deselect all
                         if (!Input.GetKey(KeyCode.LeftShift))
                         {
                             _selectedDictionary.DeselectAll();
@@ -66,6 +96,7 @@ namespace Controls
                 }
                 else
                 {
+                    // If we are dragging, create a box and select all objects within it
                     Vector2[] corners = GenerateBoundingBox(_selectStart, Input.mousePosition);
                     Vector3[] bottom = new Vector3[4];
                     Vector3[] top = new Vector3[4];
@@ -73,6 +104,7 @@ namespace Controls
                     int i = 0;
 
                     var mainCamera = Camera.main;
+                    // Generate the bottom and top corners of the box based on the corners of the screen
                     foreach (Vector2 corner in corners)
                     {
                         Ray ray = mainCamera!.ScreenPointToRay(corner);
@@ -88,6 +120,7 @@ namespace Controls
                     //generate the mesh
                     Mesh selectionMesh = GenerateSelectionMesh(bottom,top);
 
+                    // Collision will eventually trigger the selection of the object
                     MeshCollider selectionBox = gameObject.AddComponent<MeshCollider>();
                     selectionBox.sharedMesh = selectionMesh;
                     selectionBox.convex = true;
@@ -99,17 +132,19 @@ namespace Controls
                     }
 
                     Destroy(selectionBox, 0.02f);
+                    _dragSelect = false;
                 }
-
-                _dragSelect = false;
             }
 
+            // If we right click, move the selected units
             if (Input.GetMouseButton(1))
             {
                 _ray = Camera.main!.ScreenPointToRay(Input.mousePosition);
                 if (Physics.Raycast(_ray, out _hitData, 50000.0f, LayerMask))
                 {
+                    // If we hit somenthing else than the ground, make the units attack it
                     bool shouldAttack = !_hitData.transform.GameObject().CompareTag("Ground");
+
                     foreach (var agent in _selectedDictionary.GetSelectedObjects().Values)
                     {
                         if (agent.GetComponent<Agent>() != null)
@@ -140,14 +175,28 @@ namespace Controls
                             }
                         }
                     }
+                    
+                    
                 }
                 
+            }
+
+            if (Input.GetKey(KeyCode.B))
+            {
+                _menuManager.BuildMenu();
+            }
+            
+            if (Input.GetKey(KeyCode.Escape))
+            {
+                _menuManager.CloseMenu();
+                _isBuilding = false;
+                _selectedDictionary.DeselectAll();
             }
         }
         
         void OnGUI()
         {
-            if (_dragSelect)
+            if (_dragSelect && !_isBuilding)
             {
                 var rect = Utils.GetScreenRect(_selectStart, Input.mousePosition);
                 Utils.DrawScreenRect(rect, new Color(0.8f, 0.8f, 0.95f, 0.25f));
@@ -192,6 +241,13 @@ namespace Controls
         private void OnTriggerEnter(Collider other)
         {
             _selectedDictionary.AddSelected(other.gameObject);
+        }
+
+        public void SetPlatformConstruction()
+        {
+            _isBuilding = true;
+            _selectedDictionary.DeselectAll();
+            buildingTimeout = Time.time + 0.5f;
         }
     }
 }

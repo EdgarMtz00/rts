@@ -16,19 +16,28 @@ namespace Units.Movement.Behaviours
 
         public override void Update()
         {
-            if (Vector3.Distance(transform.position, target.transform.position) < Agent.range)
+            if (target == null)
             {
-                // wait for the next attack
-                if (Time.time > Agent.nextAttack)
-                {
-                    // attack
-                    Agent.nextAttack = Time.time + Agent.fireRate;
-                    Missile.SpawnMissile(transform.position, target, Agent.missile);
-                }
+                Destroy(this);
             }
             else
             {
-                base.Update();   
+                transform.LookAt(target.transform);
+
+                if (Vector3.Distance(transform.position, target.transform.position) < Agent.range)
+                {
+                    // wait for the next attack
+                    if (Time.time > Agent.nextAttack)
+                    {
+                        // attack
+                        Agent.nextAttack = Time.time + Agent.fireRate;
+                        Missile.SpawnMissile(transform.position, target, Agent.missile);
+                    }
+                }
+                else
+                {
+                    base.Update();
+                }
             }
         }
         

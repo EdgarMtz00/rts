@@ -181,6 +181,7 @@ GameObject:
   - component: {fileID: 5903825510230412485}
   - component: {fileID: 7151227657410605026}
   - component: {fileID: 531351024}
+  - component: {fileID: -2449583954675223056}
   m_Layer: 3
   m_Name: Tank_Blue
   m_TagString: Untagged
@@ -310,6 +311,20 @@ MonoBehaviour:
   velocity: {x: 0, y: 0, z: 0}
   missile: {fileID: 7090710131271465290, guid: 6f4d29cfd8b2b4744bcabc5437eeb536, type: 3}
   nextAttack: 0
+--- !u!114 &-2449583954675223056
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1153093373755847779}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 65f617af72087f643848b3ea8384a7f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxHealth: 100
+  health: 100
 --- !u!1 &1397629665669033979
 GameObject:
   m_ObjectHideFlags: 0

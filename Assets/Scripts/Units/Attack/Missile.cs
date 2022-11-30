@@ -17,11 +17,17 @@ namespace Units.Attack
         
         void Update()
         {
+            if(target == null)
+            {
+                Destroy(gameObject);
+                return;
+            }
             transform.position = Vector3.MoveTowards(transform.position, target.transform.position, speed * Time.deltaTime);
         }
         
-        private void OnCollisionEnter(Collision other)
+        private void OnTriggerEnter(Collider other)
         {
+            other.gameObject.GetComponent<Health>().TakeDamage(10);
             Destroy(gameObject);
         }
     }
