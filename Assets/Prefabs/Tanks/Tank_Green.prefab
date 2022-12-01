@@ -286,7 +286,7 @@ Rigidbody:
   m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 1
 --- !u!114 &1734696152
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -301,7 +301,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxSpeed: 3
   maxAcceleration: 0.5
-  range: 10
+  range: 5
   speedLimit: 0
   fireRate: 0.5
   orientation: 0

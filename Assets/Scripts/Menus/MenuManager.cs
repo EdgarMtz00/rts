@@ -7,7 +7,7 @@ namespace Menus
     {
         [SerializeField] private GameObject buildMenu;
         [SerializeField] private GameObject unitMenu;
-
+        private bool shouldAddListener = true;
         private void Start()
         {
             buildMenu.SetActive(false);
@@ -29,8 +29,13 @@ namespace Menus
         {
             CloseBuildMenu();
             unitMenu.SetActive(true);
-            unitMenu.GetComponentInChildren<Button>().onClick.AddListener(() =>
-                Instantiate(playerTank, position + new Vector3(0, 0.33f, 0), Quaternion.identity));
+            
+            if (shouldAddListener)
+            {
+                shouldAddListener = false;
+                unitMenu.GetComponentInChildren<Button>().onClick.AddListener(() =>
+                    Instantiate(playerTank, position + new Vector3(0, 0.33f, 0), Quaternion.identity));
+            }
         }
 
         public void CloseUnitMenu()
