@@ -25,10 +25,7 @@ public class GameSystem : MonoBehaviour
     {
         if (Time.time > endTime)
         {
-            foreach (GameObject objective in _objectives)
-            {
-                Destroy(objective);
-            }
+            ScenesManager.LoadLose();
         }
         else
         {
@@ -42,7 +39,7 @@ public class GameSystem : MonoBehaviour
             }
             if (allComplete)
             {
-                Debug.Log("All objectives complete!");
+                ScenesManager.LoadWin();
             }
         }
     }

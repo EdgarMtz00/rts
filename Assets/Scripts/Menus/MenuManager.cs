@@ -1,3 +1,5 @@
+using System;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -7,7 +9,10 @@ namespace Menus
     {
         [SerializeField] private GameObject buildMenu;
         [SerializeField] private GameObject unitMenu;
-        private bool shouldAddListener = true;
+        [SerializeField] private GameObject countdown;
+        
+        private float _timer = 0f;
+        private bool _shouldAddListener = true;
         private void Start()
         {
             buildMenu.SetActive(false);
@@ -30,12 +35,19 @@ namespace Menus
             CloseBuildMenu();
             unitMenu.SetActive(true);
             
-            if (shouldAddListener)
+            if (_shouldAddListener)
             {
-                shouldAddListener = false;
+                _shouldAddListener = false;
                 unitMenu.GetComponentInChildren<Button>().onClick.AddListener(() =>
                     Instantiate(playerTank, position + new Vector3(0, 0.33f, 0), Quaternion.identity));
             }
+        }
+
+        public void Update()
+        {
+            _timer += Time.deltaTime;
+            countdown.GetComponentInChildren<TextMeshProUGUI>().text = 60 - (int) _timer + "s"; 
+            
         }
 
         public void CloseUnitMenu()

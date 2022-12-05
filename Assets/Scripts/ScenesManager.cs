@@ -14,6 +14,14 @@ public class ScenesManager : MonoBehaviour
     {
         SceneManager.LoadScene("MainMenu");
     }
+    
+    public static void LoadWin() {
+        SceneManager.LoadScene("Win");
+    }
+    
+    public static void LoadLose() {
+        SceneManager.LoadScene("Lose");
+    }
 
     public void ExitGame()
     {
